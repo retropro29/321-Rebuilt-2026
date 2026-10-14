@@ -1,6 +1,6 @@
 /* (C) RoboLancers 2026 */
 package frc.robot.subsystems.hood;
-
+//whole bunch of imports
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
@@ -84,65 +84,78 @@ public class Hood extends SubsystemBase {
     hoodMotor.getConfigurator().apply(hoodMotorConfigs);
   }
 
+  //Sets up the CAN motors
   public CANdiConfiguration candiConfigs =
       new CANdiConfiguration()
           .withDigitalInputs(
               new DigitalInputsConfigs().withS1CloseState(S1CloseStateValue.CloseWhenLow));
 
+  //Sets the PID values for the hood motor controller and the feedforward value for the arm feedforward controller.
   public void setHoodPID(double kP, double kD, double kG) {
     pidController.setP(kP);
     pidController.setD(kD);
     armFeedforward.setKg(kG);
   }
 
+  //Sets the target angle for the hood to move to.
   public void setTargetAngle(Angle angle) {
     this.targetAngle = angle;
   }
 
+  //Moves the hood to the desired angle using PID controls and an arm feedforward value
   public void goToAngle(Angle angle) {
     hoodMotor.setVoltage(
         pidController.calculate(getAngle().in(Degrees), angle.in(Degrees))
             + armFeedforward.calculate(angle.in(Degrees), 0));
   }
 
+  //Calculates the score angle based on the distance to the hub.
   public Angle getScoreAngle(Distance hubDistance) {
     double pitch = 0;
     pitch = -37.69619 + 9.35374 * Math.log(hubDistance.in(Inches));
     return Degrees.of(pitch);
   }
 
+  //Returns the current angle of the hood, also logs the value to the dashboard.
   @Logged(name = "hoodPitch")
   public Angle getAngle() {
     Angle angle = hoodMotor.getPosition().getValue();
     return angle;
   }
 
+  //Returns the current velocity of the hood, also logs the value to the dashboard.
   @Logged(name = "hoodVelocity")
   public AngularVelocity getVelocity() {
     return hoodMotor.getVelocity().getValue();
   }
 
+  //checks whther the homed velocity is within a set  tolerence value
   public boolean isHomedVelocity() {
     return Math.abs(getVelocity().in(RPM) - HoodConstants.kHomingVelocityFloor.in(RPM))
         <= HoodConstants.kHomingVelocityTolerance;
   }
 
+  //checks whther the homed is greater than or equal to the set current ceiling value
   public boolean isHomedCurrent() {
     return getCurrent().in(Amps) >= HoodConstants.kCurrentCeiling.in(Amps);
   }
 
+  //checks whether the hood is at the homed position by checking the state of the magnetic limit switch
   public boolean atHomedPosition() {
     return magneticLimitSwitch.getS1Closed(true).getValue();
   }
 
+  //Zeros the encoder for the hood motor
   public void zeroEncoder() {
     hoodMotor.setPosition(HoodConstants.kZeroPosition);
   }
 
+  //Sets the voltage for the hood motor
   public void runVolts(Voltage volts) {
     hoodMotor.setVoltage(volts.in(Volts));
   }
 
+  //Checks and logs whether the hood is at the target angle within a set tolerance value
   @Logged(name = "hoodAtTargetAngle")
   public boolean atTargetAngle() {
     boolean atTargetAngle =
@@ -151,6 +164,7 @@ public class Hood extends SubsystemBase {
     return atTargetAngle;
   }
 
+//Checks whether the hood is at a specific angle
   public boolean atAngle(Angle angle) {
     boolean atAngle =
         Math.abs(getAngle().in(Degrees) - angle.in(Degrees))
@@ -158,6 +172,7 @@ public class Hood extends SubsystemBase {
     return atAngle;
   }
 
+  //Sets the PID and feedforward values for the hood motor and moves the hood to a specific angle
   public void tune(double kP, double kD, double kG, double targetAngle) {
     setHoodPID(kP, kD, kG);
     goToAngle(Degrees.of(targetAngle));
@@ -171,21 +186,25 @@ public class Hood extends SubsystemBase {
         .andThen(() -> zeroEncoder());
   }
 
+  //logs the target angle for the hood
   @Logged(name = "hoodTargetAngle")
   public Angle getTargetAngle() {
     return this.targetAngle;
   }
 
+  //logs the voltage for the hood
   @Logged(name = "hoodVoltage")
   public Voltage getVoltage() {
     return hoodMotor.getMotorVoltage().getValue();
   }
 
+  //logs the current for the hood
   @Logged(name = "hoodCurrent")
   public Current getCurrent() {
     return hoodMotor.getStatorCurrent().getValue();
   }
 
+  //logs the position of the hood limit switch
   @Override
   public void periodic() {
     SmartDashboard.putNumber("Hood Angle", hoodMotor.getPosition().getValue().in(Degrees));
